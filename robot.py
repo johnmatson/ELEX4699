@@ -8,14 +8,15 @@ SERVOPWM = 32
 
 PWMFREQ = 10e3
 
-leftMotor = (AIN1,AIN1,APWM)
-rightMotor = (BIN1,BIN1,BPWM)
+
 
 # import RPi.GPIO library
 try:
     import RPi.GPIO as GPIO
 except RuntimeError:
     print("Error importing RPi.GPIO!  This is probably because you need superuser privileges.  You can achieve this by using 'sudo' to run your script")
+
+import time
 
 # define pin numbering scheme
 GPIO.setmode(GPIO.BOARD)
@@ -34,14 +35,13 @@ GPIO.setup(BPWM, GPIO.OUT)
 GPIO.setup(SERVOPWM, GPIO.OUT)
 
 # create PWM pin variables
-leftWheel = GPIO.PWM(APWM, PWMFREQ)
-rightWheel = GPIO.PWM(BPWM, PWMFREQ)
-servo = GPIO.PWM(SERVOPWM, PWMFREQ)
+leftPWM = GPIO.PWM(APWM, PWMFREQ)
+rightPWM = GPIO.PWM(BPWM, PWMFREQ)
+servoPWM = GPIO.PWM(SERVOPWM, PWMFREQ)
 
-# start PWM with 0% duty cycle
-leftWheel.start(0)
-rightWheel.start(0)
-servo.start(0)
+# create motor "objects"
+leftMotor = [AIN1,AIN2,leftPWM]
+rightMotor = [BIN1,BIN2,rightPWM]
 
 def motorFwd(motor):
     GPIO.output(motor[0], GPIO.LOW)
@@ -51,21 +51,34 @@ def motorRev(motor):
     GPIO.output(motor[0], GPIO.HIGH)
     GPIO.output(motor[1], GPIO.LOW)
 
+def motorInit(motor):
+    motor[3].start(0)
+
+def motorIncrease(motor, initDC=0, finalDC=100):
+    if initDC < finalDC:
+        for DC in range(finalDC-initDC):
+            motor[3].ChangeDutyCycle(initDC + DC)
+            time.sleep(100e-3)
+
+def motorDecrease(motor, initDC=100, finalDC=0):
+    if initDC > finalDC:
+        for DC in range(initDC-finalDC):
+            motor[3].ChangeDutyCycle(initDC - DC)
+            time.sleep(100e-3)
+    
 
 
+
+motorInit(leftMotor)
+motorInit(rightMotor)
 motorFwd(leftMotor)
 motorFwd(rightMotor)
-
-for i in range(5):
-    for dutyCycle in range(1000):
-        leftWheel.ChangeDutyCycle(dutyCycle/10)
-    for dutyCycle in range(1000):
-        leftWheel.ChangeDutyCycle(100 - dutyCycle/10)
-
-    for dutyCycle in range(1000):
-        rightWheel.ChangeDutyCycle(dutyCycle/10)
-    for dutyCycle in range(1000):
-        rightWheel.ChangeDutyCycle(100 - dutyCycle/10)
+motorIncrease(leftMotor)
+time.sleep(1)
+motorIncrease(rightMotor)
+time.sleep(3)
+motorDecrease(leftMotor)
+motorDecrease(rightMotor)
 
 
 
