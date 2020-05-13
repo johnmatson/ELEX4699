@@ -1,85 +1,107 @@
-AIN1 = 11
-AIN2 = 13
-APWM = 15
-BIN1 = 29
-BIN2 = 31
-BPWM = 33
-SERVOPWM = 32
-
-PWMFREQ = 10e3
 
 
+# exitKey = False
+# while exitKey is False:
 
-# import RPi.GPIO library
-try:
-    import RPi.GPIO as GPIO
-except RuntimeError:
-    print("Error importing RPi.GPIO!  This is probably because you need superuser privileges.  You can achieve this by using 'sudo' to run your script")
+#     # read keyboard input
+#     keyCmd = input()
+#     keyCmd.lower()
+#     if keyCmd is 'e':
+#         exitKey = True
 
+#     # 
+
+
+
+
+
+import RPi.GPIO as GPIO
 import time
 
-# define pin numbering scheme
-GPIO.setmode(GPIO.BOARD)
+class piMotor:
 
-# setup left motor pins
-GPIO.setup(AIN1, GPIO.OUT)
-GPIO.setup(AIN2, GPIO.OUT)
-GPIO.setup(APWM, GPIO.OUT)
+    # pins constants
+    AIN1 = 11
+    AIN2 = 13
+    APWM = 15
+    BIN1 = 29
+    BIN2 = 31
+    BPWM = 33
+    SERVOPWM = 32
 
-# setup right motor pins
-GPIO.setup(BIN1, GPIO.OUT)
-GPIO.setup(BIN2, GPIO.OUT)
-GPIO.setup(BPWM, GPIO.OUT)
+    #  misc constants
+    PWMFREQ = 10e3
+    PWMSLEEP = 100e-6
 
-# setup servo motor pins
-GPIO.setup(SERVOPWM, GPIO.OUT)
+    # create PWM pin variables
+    leftPWM = GPIO.PWM(APWM, PWMFREQ)
+    rightPWM = GPIO.PWM(BPWM, PWMFREQ)
+    servoPWM = GPIO.PWM(SERVOPWM, PWMFREQ)
 
-# create PWM pin variables
-leftPWM = GPIO.PWM(APWM, PWMFREQ)
-rightPWM = GPIO.PWM(BPWM, PWMFREQ)
-servoPWM = GPIO.PWM(SERVOPWM, PWMFREQ)
+    # create motor "objects"
+    leftMotor = (AIN1,AIN2,leftPWM)
+    rightMotor = (BIN1,BIN2,rightPWM)
 
-# create motor "objects"
-leftMotor = [AIN1,AIN2,leftPWM]
-rightMotor = [BIN1,BIN2,rightPWM]
+    motorDict = {'left':leftMotor, 'right':rightMotor}
 
-def motorFwd(motor):
-    GPIO.output(motor[0], GPIO.LOW)
-    GPIO.output(motor[1], GPIO.HIGH)
+    def __init__(self):
+        # define pin numbering scheme
+        GPIO.setmode(GPIO.BOARD)
 
-def motorRev(motor):
-    GPIO.output(motor[0], GPIO.HIGH)
-    GPIO.output(motor[1], GPIO.LOW)
+        # setup left motor pins
+        GPIO.setup(self.AIN1, GPIO.OUT)
+        GPIO.setup(self.AIN2, GPIO.OUT)
+        GPIO.setup(self.APWM, GPIO.OUT)
 
-def motorInit(motor):
-    motor[3].start(0)
+        # setup right motor pins
+        GPIO.setup(self.BIN1, GPIO.OUT)
+        GPIO.setup(self.BIN2, GPIO.OUT)
+        GPIO.setup(self.BPWM, GPIO.OUT)
 
-def motorIncrease(motor, initDC=0, finalDC=100):
-    if initDC < finalDC:
-        for DC in range(finalDC-initDC):
-            motor[3].ChangeDutyCycle(initDC + DC)
-            time.sleep(100e-3)
+        # setup servo motor pins
+        GPIO.setup(self.SERVOPWM, GPIO.OUT)
 
-def motorDecrease(motor, initDC=100, finalDC=0):
-    if initDC > finalDC:
-        for DC in range(initDC-finalDC):
-            motor[3].ChangeDutyCycle(initDC - DC)
-            time.sleep(100e-3)
+    def fwd(self, motorDes):
+        motor = self.motorDict[motorDes]
+        GPIO.output(motor[0], GPIO.LOW)
+        GPIO.output(motor[1], GPIO.HIGH)
+
+    def rev(self, motorDes):
+        motor = self.motorDict[motorDes]
+        GPIO.output(motor[0], GPIO.HIGH)
+        GPIO.output(motor[1], GPIO.LOW)
+
+    def init(self, motorDes):
+        motor = self.motorDict[motorDes]
+        motor[2].start(0)
+
+    def increase(self, motorDes, initDC=0, finalDC=100):
+        motor = self.motorDict[motorDes]
+        if initDC < finalDC:
+            for DC in range(finalDC-initDC):
+                motor[2].ChangeDutyCycle(initDC + DC)
+                time.sleep(self.PWMSLEEP)
+
+    def decrease(self, motorDes, initDC=100, finalDC=0):
+        motor = self.motorDict[motorDes]
+        if initDC > finalDC:
+            for DC in range(initDC-finalDC):
+                motor[2].ChangeDutyCycle(initDC - DC)
+                time.sleep(self.PWMSLEEP)
     
+    def __del__(self):
+        GPIO.cleanup()
 
 
 
-motorInit(leftMotor)
-motorInit(rightMotor)
-motorFwd(leftMotor)
-motorFwd(rightMotor)
-motorIncrease(leftMotor)
+motor = piMotor()
+motor.init('left')
+motor.init('right')
+motor.fwd('left')
+motor.fwd('right')
+motor.increase('left')
 time.sleep(1)
-motorIncrease(rightMotor)
+motor.increase('right')
 time.sleep(3)
-motorDecrease(leftMotor)
-motorDecrease(rightMotor)
-
-
-
-GPIO.cleanup()
+motor.decrease('left')
+motor.decrease('right')
