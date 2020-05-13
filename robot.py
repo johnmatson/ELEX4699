@@ -18,6 +18,48 @@
 import RPi.GPIO as GPIO
 import time
 
+class dcMotor:
+
+    def __init__(self, IN1, IN2, PWM, PWMFREQ=10e3, PWMSLEEP=100e-6):
+        # define pin numbering scheme
+        GPIO.setmode(GPIO.BOARD)
+
+        # setup motor pins
+        GPIO.setup(IN1, GPIO.OUT)
+        GPIO.setup(IN2, GPIO.OUT)
+        GPIO.setup(PWM, GPIO.OUT)
+
+        self.PWM = GPIO.PWM(PWM, PWMFREQ) # create PWM object
+        self.PWM.start(0) # initialize PWM
+        self.motor = (IN1,IN2,PWM) # create motor object
+
+        self.PWMSLEEP = PWMSLEEP
+
+
+    def fwd(self):
+        GPIO.output(self.motor[0], GPIO.LOW)
+        GPIO.output(self.motor[1], GPIO.HIGH)
+
+    def rev(self):
+        GPIO.output(self.motor[0], GPIO.HIGH)
+        GPIO.output(self.motor[1], GPIO.LOW)
+
+    def inc(self, initDC=0, finalDC=100):
+        if initDC < finalDC:
+            for DC in range(finalDC-initDC):
+                self.motor[2].ChangeDutyCycle(initDC + DC)
+                time.sleep(self.PWMSLEEP)
+
+    def dec(self, initDC=100, finalDC=0):
+        if initDC > finalDC:
+            for DC in range(initDC-finalDC):
+                self.motor[2].ChangeDutyCycle(initDC - DC)
+                time.sleep(self.PWMSLEEP)
+    
+    def __del__(self):
+        GPIO.cleanup()
+
+
 class piMotor:
 
     # pins constants
@@ -94,14 +136,38 @@ class piMotor:
 
 
 
-motor = piMotor()
-motor.init('left')
-motor.init('right')
-motor.fwd('left')
-motor.fwd('right')
-motor.increase('left')
+# motor = piMotor()
+# motor.init('left')
+# motor.init('right')
+# motor.fwd('left')
+# motor.fwd('right')
+# motor.increase('left')
+# time.sleep(1)
+# motor.increase('right')
+# time.sleep(3)
+# motor.decrease('left')
+# motor.decrease('right')
+
+
+
+# pins constants
+AIN1 = 11
+AIN2 = 13
+APWM = 15
+BIN1 = 29
+BIN2 = 31
+BPWM = 33
+SERVOPWM = 32
+
+leftMotor = dcMotor(AIN1, AIN2, APWM)
+rightMotor = dcMotor(BIN1, BIN2, BPWM)
+
+leftMotor.fwd()
+rightMotor.fwd()
+
+leftMotor.inc()
 time.sleep(1)
-motor.increase('right')
-time.sleep(3)
-motor.decrease('left')
-motor.decrease('right')
+rightMotor.inc()
+time.sleep(1)
+leftMotor.dec()
+rightMotor.dec()
