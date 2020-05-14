@@ -1,15 +1,3 @@
-# exitKey = False
-# while exitKey is False:
-
-#     # read keyboard input
-#     keyCmd = input()
-#     keyCmd.lower()
-#     if keyCmd is 'e':
-#         exitKey = True
-
-#     # 
-
-
 import RPi.GPIO as GPIO
 import time
 
@@ -137,14 +125,23 @@ class robotMotor:
         self.right.dec(init=speed)
 
 
-
-
 motorControl = robotMotor()
-motorControl.fwd
-motorControl.rev
-motorControl.softLeft
-motorControl.softRight
-motorControl.hardLeft
-motorControl.hardRight
+exitKey = False
+while exitKey is False:
 
-del motorControl
+    keyCmd = input()
+    keyCmd.lower()
+    if keyCmd is 'e':
+        exitKey = True
+    elif keyCmd is '5':
+        motorControl.fwd()
+    elif keyCmd is '1':
+        motorControl.softLeft()
+    elif keyCmd is '4':
+        motorControl.hardLeft()
+    elif keyCmd is '3':
+        motorControl.softRight()
+    elif keyCmd is '6':
+        motorControl.hardRight()
+
+GPIO.cleanup()
