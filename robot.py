@@ -121,10 +121,10 @@ class robotMotor:
     def hardLeft(self, driveTime=0.5, speed=100):
         self.left.rev()
         self.right.fwd()
-        self.left.inc(final=speed)
+        self.left.inc(final=speed/2)
         self.right.inc(final=speed)
         time.sleep(driveTime)
-        self.left.dec(init=speed)
+        self.left.dec(init=speed/2)
         self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
@@ -133,12 +133,25 @@ class robotMotor:
         self.left.fwd()
         self.right.rev()
         self.left.inc(final=speed)
-        self.right.inc(final=speed)
+        self.right.inc(final=speed/2)
         time.sleep(driveTime)
         self.left.dec(init=speed)
-        self.right.dec(init=speed)
+        self.right.dec(init=speed/2)
         self.left.stop()
         self.right.stop()
+
+
+class camera:
+
+    def __init__(self):
+        pass
+
+
+class server:
+
+    def __init__(self):
+        pass
+
 
 
 motorControl = robotMotor()
