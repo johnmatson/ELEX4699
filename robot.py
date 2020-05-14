@@ -1,5 +1,3 @@
-
-
 # exitKey = False
 # while exitKey is False:
 
@@ -10,9 +8,6 @@
 #         exitKey = True
 
 #     # 
-
-
-
 
 
 import RPi.GPIO as GPIO
@@ -43,16 +38,16 @@ class dcMotor:
         GPIO.output(self.motor[0], GPIO.HIGH)
         GPIO.output(self.motor[1], GPIO.LOW)
 
-    def inc(self, initDC=0, finalDC=100):
-        if initDC < finalDC:
-            for DC in range(finalDC-initDC):
-                self.motor[2].ChangeDutyCycle(initDC + DC)
+    def inc(self, init=0, final=100):
+        if init < final:
+            for DC in range(final-init):
+                self.motor[2].ChangeDutyCycle(init + DC)
                 time.sleep(self.PWMSLEEP)
 
-    def dec(self, initDC=100, finalDC=0):
-        if initDC > finalDC:
-            for DC in range(initDC-finalDC):
-                self.motor[2].ChangeDutyCycle(initDC - DC)
+    def dec(self, init=100, final=0):
+        if init > final:
+            for DC in range(init-final):
+                self.motor[2].ChangeDutyCycle(init - DC)
                 time.sleep(self.PWMSLEEP)
 
 
@@ -73,51 +68,83 @@ class servoMotor:
         dutyCycle = self.PWMFREQ*(val+180)/1800
         self.PWM.ChangeDutyCycle(dutyCycle)
 
-    # def inc(self, initDC=0, finalDC=100):
-    #     if initDC < finalDC:
-    #         for DC in range(finalDC-initDC):
-    #             self.PWM.ChangeDutyCycle(initDC + DC)
-    #             time.sleep(self.PWMSLEEP)
 
-    # def dec(self, initDC=100, finalDC=0):
-    #     if initDC > finalDC:
-    #         for DC in range(initDC-finalDC):
-    #             self.PWM.ChangeDutyCycle(initDC - DC)
-    #             time.sleep(self.PWMSLEEP)
+class robotMotor:
+
+    def __init__(self):
+        # pins constants
+        AIN1 = 11
+        AIN2 = 13
+        APWM = 15
+        BIN1 = 29
+        BIN2 = 31
+        BPWM = 33
+        SERVOPWM = 32
+
+        # create motor objects
+        self.left = dcMotor(AIN1, AIN2, APWM)
+        self.right = dcMotor(BIN1, BIN2, BPWM)
+        self.servo = servoMotor(SERVOPWM)
+
+    def fwd(self, driveTime=0.5, speed=100):
+        self.left.fwd()
+        self.right.fwd()
+        self.left.inc(final=speed)
+        self.right.inc(final=speed)
+        time.sleep(driveTime)
+        self.left.dec(init=speed)
+        self.right.dec(init=speed)
+
+    def rev(self, driveTime=0.5, speed=100):
+        self.left.rev()
+        self.right.rev()
+        self.left.inc(final=speed)
+        self.right.inc(final=speed)
+        time.sleep(driveTime)
+        self.left.dec(init=speed)
+        self.right.dec(init=speed)
+
+    def softLeft(self, driveTime=0.5, speed=100):
+        self.left.fwd()
+        self.right.fwd()
+        self.right.inc(final=speed)
+        time.sleep(driveTime)
+        self.right.dec(init=speed)
+
+    def softRight(self, driveTime=0.5, speed=100):
+        self.left.fwd()
+        self.right.fwd()
+        self.left.inc(final=speed)
+        time.sleep(driveTime)
+        self.left.dec(init=speed)
+
+    def hardLeft(self, driveTime=0.5, speed=100):
+        self.left.rev()
+        self.right.fwd()
+        self.left.inc(final=speed)
+        self.right.inc(final=speed)
+        time.sleep(driveTime)
+        self.left.dec(init=speed)
+        self.right.dec(init=speed)
+
+    def hardRight(self, driveTime=0.5, speed=100):
+        self.left.fwd()
+        self.right.rev()
+        self.left.inc(final=speed)
+        self.right.inc(final=speed)
+        time.sleep(driveTime)
+        self.left.dec(init=speed)
+        self.right.dec(init=speed)
 
 
 
 
-# pins constants
-AIN1 = 11
-AIN2 = 13
-APWM = 15
-BIN1 = 29
-BIN2 = 31
-BPWM = 33
-SERVOPWM = 32
+motorControl = robotMotor()
+motorControl.fwd
+motorControl.rev
+motorControl.softLeft
+motorControl.softRight
+motorControl.hardLeft
+motorControl.hardRight
 
-leftMotor = dcMotor(AIN1, AIN2, APWM)
-rightMotor = dcMotor(BIN1, BIN2, BPWM)
-servoMotor = servoMotor(SERVOPWM)
-
-leftMotor.fwd()
-rightMotor.fwd()
-
-leftMotor.inc()
-time.sleep(1)
-rightMotor.inc()
-time.sleep(1)
-leftMotor.dec()
-rightMotor.dec()
-
-del leftMotor
-del rightMotor
-
-servoMotor.setPos(0)
-time.sleep(1)
-servoMotor.setPos(90)
-time.sleep(1)
-servoMotor.setPos(180)
-
-del servoMotor
+del motorControl
