@@ -26,6 +26,10 @@ class dcMotor:
         GPIO.output(self.motor[0], GPIO.HIGH)
         GPIO.output(self.motor[1], GPIO.LOW)
 
+    def stop(self):
+        GPIO.output(self.motor[0], GPIO.LOW)
+        GPIO.output(self.motor[1], GPIO.LOW)
+
     def inc(self, init=0, final=100):
         if init < final:
             for DC in range(final-init):
@@ -82,6 +86,8 @@ class robotMotor:
         time.sleep(driveTime)
         self.left.dec(init=speed)
         self.right.dec(init=speed)
+        self.left.stop()
+        self.right.stop()
 
     def rev(self, driveTime=0.5, speed=100):
         self.left.rev()
@@ -91,6 +97,8 @@ class robotMotor:
         time.sleep(driveTime)
         self.left.dec(init=speed)
         self.right.dec(init=speed)
+        self.left.stop()
+        self.right.stop()
 
     def softLeft(self, driveTime=0.5, speed=100):
         self.left.fwd()
@@ -98,6 +106,8 @@ class robotMotor:
         self.right.inc(final=speed)
         time.sleep(driveTime)
         self.right.dec(init=speed)
+        self.left.stop()
+        self.right.stop()
 
     def softRight(self, driveTime=0.5, speed=100):
         self.left.fwd()
@@ -105,6 +115,8 @@ class robotMotor:
         self.left.inc(final=speed)
         time.sleep(driveTime)
         self.left.dec(init=speed)
+        self.left.stop()
+        self.right.stop()
 
     def hardLeft(self, driveTime=0.5, speed=100):
         self.left.rev()
@@ -114,6 +126,8 @@ class robotMotor:
         time.sleep(driveTime)
         self.left.dec(init=speed)
         self.right.dec(init=speed)
+        self.left.stop()
+        self.right.stop()
 
     def hardRight(self, driveTime=0.5, speed=100):
         self.left.fwd()
@@ -123,6 +137,8 @@ class robotMotor:
         time.sleep(driveTime)
         self.left.dec(init=speed)
         self.right.dec(init=speed)
+        self.left.stop()
+        self.right.stop()
 
 
 motorControl = robotMotor()
@@ -135,6 +151,8 @@ while exitKey is False:
         exitKey = True
     elif keyCmd is '5':
         motorControl.fwd()
+    elif keyCmd is '2':
+        motorControl.rev()
     elif keyCmd is '1':
         motorControl.softLeft()
     elif keyCmd is '4':
