@@ -1,5 +1,7 @@
 import RPi.GPIO as GPIO
 import time
+import picamera
+import socket
 
 class dcMotor:
 
@@ -59,6 +61,9 @@ class servoMotor:
         # convert angle in degrees to duty cycle in pencentage for a 1-2ms pulse
         dutyCycle = self.PWMFREQ*(val+180)/1800
         self.PWM.ChangeDutyCycle(dutyCycle)
+
+    def setPos1(self, val):
+        self.PWM.ChangeDutyCycle(5)
 
 
 class robotMotor:
@@ -156,21 +161,34 @@ class camera:
 class server:
 
     def __init__(self):
-        pass
+        self.server_socket = socket.socket()
+        self.server_socket.bind(('0.0.0.0', 9964))
+        self.server_socket.listen(0)
+        print('waiting for connection')
+        self.connection = self.server_socket.accept()
+
 
 
 camera = picamera.PiCamera()
-camera.resolution(1296,972)
+camera.resolution = (1296,972)
 camera.vflip = True
-camera.hflip = False
+camera.hflip = True
 camera.start_preview(fullscreen=False, window=(100,200,400,600))
+
+server_socket = socket.socket()
+server_socket.bind(('0.0.0.0', 9964))
+server_socket.listen(0)
+print('waiting for connection')
+connection = server_socket.accept()
 
 motorControl = robotMotor()
 exitKey = False
 while exitKey is False:
 
-    keyCmd = input()
-    keyCmd.lower()
+    keyCmd = connection.recv(1024)
+    if not keyCmd:
+        break
+    # keyCmd = input()
     if keyCmd is 'e':
         exitKey = True
     elif keyCmd is '5':
@@ -190,5 +208,7 @@ while exitKey is False:
     elif keyCmd is '-':
         motorControl.servoUp()
 
+connection.close()
+server_socket.close()
 camera.stop_preview()
 GPIO.cleanup()
