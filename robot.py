@@ -121,10 +121,10 @@ class robotMotor:
     def hardLeft(self, driveTime=0.5, speed=100):
         self.left.rev()
         self.right.fwd()
-        self.left.inc(final=speed/2)
+        self.left.inc(final=speed//2)
         self.right.inc(final=speed)
         time.sleep(driveTime)
-        self.left.dec(init=speed/2)
+        self.left.dec(init=speed//2)
         self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
@@ -133,12 +133,18 @@ class robotMotor:
         self.left.fwd()
         self.right.rev()
         self.left.inc(final=speed)
-        self.right.inc(final=speed/2)
+        self.right.inc(final=speed//2)
         time.sleep(driveTime)
         self.left.dec(init=speed)
-        self.right.dec(init=speed/2)
+        self.right.dec(init=speed//2)
         self.left.stop()
         self.right.stop()
+
+    def servoDown(self):
+        self.servo.setPos(0)
+
+    def servoUp(self):
+        self.servo.setPos(90)
 
 
 class camera:
@@ -153,6 +159,11 @@ class server:
         pass
 
 
+camera = picamera.PiCamera()
+camera.resolution(1296,972)
+camera.vflip = True
+camera.hflip = False
+camera.start_preview(fullscreen=False, window=(100,200,400,600))
 
 motorControl = robotMotor()
 exitKey = False
@@ -174,5 +185,10 @@ while exitKey is False:
         motorControl.softRight()
     elif keyCmd is '6':
         motorControl.hardRight()
+    elif keyCmd is '+':
+        motorControl.servoDown()
+    elif keyCmd is '-':
+        motorControl.servoUp()
 
+camera.stop_preview()
 GPIO.cleanup()

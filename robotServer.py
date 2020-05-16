@@ -8,7 +8,7 @@ camera.framerate = 24
 camera.vflip = True
 
 server_socket = socket.socket()
-server_socket.bind(('0.0.0.0', 8000))
+server_socket.bind(('0.0.0.0', 4699))
 server_socket.listen(0)
 
 # Accept a single connection and make a file-like object out of it
@@ -18,10 +18,9 @@ try:
     camera.start_recording(vidStream, format='h264')
     exitKey = False
     while not exitKey:
-        cmd = input('enter e to exit')
+        cmd = input('enter e to exit: ')
         if cmd is 'e':
             exitKey = True
-    # camera.wait_recording(60)
     camera.stop_recording()
 finally:
     vidStream.close()
