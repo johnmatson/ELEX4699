@@ -179,14 +179,16 @@ server_socket = socket.socket()
 server_socket.bind(('0.0.0.0', 9964))
 server_socket.listen(0)
 print('waiting for connection')
-connection = server_socket.accept()
+connection, addr = server_socket.accept()
+print('connected to {}',addr)
 
 motorControl = robotMotor()
 exitKey = False
 while exitKey is False:
 
-    keyCmd = connection.recv(1024)
-    if not keyCmd:
+    data = connection.recv(1024)
+    keyCmd = data.decode('utf-8')
+    if not data:
         break
     # keyCmd = input()
     if keyCmd is 'e':

@@ -13,7 +13,7 @@ server_socket.listen(0)
 
 # Accept a single connection and make a file-like object out of it
 vidStream = server_socket.accept()[0].makefile('wb')
-cmdStream = server_socket.accept()[0].makefile('rb')
+# cmdStream = server_socket.accept()[0].makefile('rb')
 try:
     camera.start_recording(vidStream, format='h264')
     exitKey = False
