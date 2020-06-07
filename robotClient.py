@@ -26,18 +26,50 @@
 
 
 import asyncio
+import subprocess
+from KBHit import KBHit
 
-async def tcp_echo_client(message):
+async def cmdClient():
     reader, writer = await asyncio.open_connection(
-        '192.168.0.27', 8888)
+        '127.0.0.1', 8888)
+        # '192.168.0.27', 8888)
 
-    print(f'Send: {message!r}')
-    writer.write(message.encode())
+    kb = KBHit()
+    while True:
+        if kb.kbhit():
+            message = kb.getch()
+            print(f'Send: {message!r}')
+            writer.write(message.encode())
+            if message == 'e':
+                break
+        await asyncio.sleep(0)
 
-    data = await reader.read(100)
-    print(f'Received: {data.decode()!r}')
-
-    print('Close the connection')
     writer.close()
+    print('Command connection closed')
 
-asyncio.run(tcp_echo_client('Hello World!'))
+
+async def vidClient():
+    reader, writer = await asyncio.open_connection(
+        '127.0.0.1', 7777)
+        # '192.168.0.27', 8888)
+
+    try:
+        # Run a viewer with an appropriate command line
+        cmdline = ['/Applications/VLC.app/Contents/MacOS/VLC', '--demux', 'h264', '-']
+        player = subprocess.Popen(cmdline, stdin=subprocess.PIPE)
+        while True:
+            data = await reader.read(100)
+            player.stdin.write(data)
+            if not data:
+                break
+                
+    finally:
+        writer.close()
+        player.terminate()
+        print('Video connection closed')
+
+
+async def main():
+    await asyncio.gather(cmdClient(), vidClient())
+
+asyncio.run(main())

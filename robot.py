@@ -2,6 +2,8 @@ import RPi.GPIO as GPIO
 import time
 import picamera
 import socket
+import asyncio
+import KBHit
 
 class dcMotor:
 
@@ -154,18 +156,68 @@ class robotMotor:
 
 class camera:
 
-    def __init__(self):
-        pass
+    def __init__(self, local):
+        camera = picamera.PiCamera()
+        camera.resolution = (1296,972)
+        camera.vflip = True
+        camera.hflip = True
+        if local:
+            camera.start_preview(fullscreen=False, window=(100,200,400,600))
 
 
 class server:
 
     def __init__(self):
-        self.server_socket = socket.socket()
-        self.server_socket.bind(('0.0.0.0', 9964))
-        self.server_socket.listen(0)
-        print('waiting for connection')
-        self.connection = self.server_socket.accept()
+        pass
+
+
+class robot:
+
+    def start(self):
+        cmd = input('Run mode or test mode? (r/t): ')
+        if cmd == 'r':
+            cmd = input('Enable remote control? (y/n): ')
+            rc = False if cmd == 'n' else True
+            cmd = input('Enable local video? (y/n): ')
+            lv = False if cmd == 'n' else True
+            cmd = input('Enable remote video? (y/n): ')
+            rv = False if cmd == 'n' else True
+            cmd = input('Enable motors? (y/n): ')
+            mtr = False if cmd == 'n' else True
+            asyncio.run(self.main(rmtCtrl=rc, lclVid=lv, rmtVid=rv, mtrs=mtr))
+        elif cmd == 't':
+            print('Test mode not yet funcitonal')
+            self.start()
+
+
+    async def main(self, rmtCtrl=True, lclVid=True, rmtVid=True, mtrs=True):
+
+        # network setup
+        if rmtCtrl or rmtVid:
+            self.server = server()
+            print('Server established')
+        if rmtCtrl:
+            print('Waiting for control client...')
+            # server.connect???
+            print('Connected to control client')
+        if rmtVid:
+            print('Waiting for video client...')
+            # server.connect???
+            print('Connected to video client')
+
+        # peripherals setup
+        if mtrs:
+            self.motor = robotMotor()
+            print('Motors ready')
+        if lclVid or rmtVid:
+            self.camera = camera(lclVid)
+            print('Video ready')
+
+        # event loop
+        
+
+
+
 
 
 
