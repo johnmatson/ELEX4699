@@ -3,7 +3,7 @@ import time
 import picamera
 import socket
 import asyncio
-import KBHit
+from KBHit import KBHit
 
 class dcMotor:
 
@@ -34,17 +34,17 @@ class dcMotor:
         GPIO.output(self.motor[0], GPIO.LOW)
         GPIO.output(self.motor[1], GPIO.LOW)
 
-    def inc(self, init=0, final=100):
+    async def inc(self, init=0, final=100):
         if init < final:
             for DC in range(final-init):
                 self.motor[2].ChangeDutyCycle(init + DC)
-                time.sleep(self.PWMSLEEP)
+                await asyncio.sleep(self.PWMSLEEP)
 
-    def dec(self, init=100, final=0):
+    async def dec(self, init=100, final=0):
         if init > final:
             for DC in range(init-final):
                 self.motor[2].ChangeDutyCycle(init - DC)
-                time.sleep(self.PWMSLEEP)
+                await asyncio.time.sleep(self.PWMSLEEP)
 
 
 class servoMotor:
@@ -85,29 +85,29 @@ class robotMotor:
         self.right = dcMotor(BIN1, BIN2, BPWM)
         self.servo = servoMotor(SERVOPWM)
 
-    def fwd(self, driveTime=0.5, speed=100):
+    async def fwd(self, driveTime=0.5, speed=100):
         self.left.fwd()
         self.right.fwd()
         self.left.inc(final=speed)
         self.right.inc(final=speed)
-        time.sleep(driveTime)
+        await asyncio.sleep(driveTime)
         self.left.dec(init=speed)
         self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
-    def rev(self, driveTime=0.5, speed=100):
+    async def rev(self, driveTime=0.5, speed=100):
         self.left.rev()
         self.right.rev()
         self.left.inc(final=speed)
         self.right.inc(final=speed)
-        time.sleep(driveTime)
+        await asyncio.sleep(driveTime)
         self.left.dec(init=speed)
         self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
-    def softLeft(self, driveTime=0.5, speed=100):
+    async def softLeft(self, driveTime=0.5, speed=100):
         self.left.fwd()
         self.right.fwd()
         self.right.inc(final=speed)
@@ -120,28 +120,28 @@ class robotMotor:
         self.left.fwd()
         self.right.fwd()
         self.left.inc(final=speed)
-        time.sleep(driveTime)
+        await asyncio.sleep(driveTime)
         self.left.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
-    def hardLeft(self, driveTime=0.5, speed=100):
+    async def hardLeft(self, driveTime=0.5, speed=100):
         self.left.rev()
         self.right.fwd()
         self.left.inc(final=speed//2)
         self.right.inc(final=speed)
-        time.sleep(driveTime)
+        await asyncio.sleep(driveTime)
         self.left.dec(init=speed//2)
         self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
-    def hardRight(self, driveTime=0.5, speed=100):
+    async def hardRight(self, driveTime=0.5, speed=100):
         self.left.fwd()
         self.right.rev()
         self.left.inc(final=speed)
         self.right.inc(final=speed//2)
-        time.sleep(driveTime)
+        await asyncio.sleep(driveTime)
         self.left.dec(init=speed)
         self.right.dec(init=speed//2)
         self.left.stop()
@@ -170,50 +170,119 @@ class server:
     def __init__(self):
         pass
 
+    async def cmdRoutine(self, reader, writer):
+        print('Command socket opened')
+        while True:
+            data = await reader.read(100)
+            message = data.decode()
 
-class robot:
+            print(f"Received {message!r}")
 
-    def start(self):
-        cmd = input('Run mode or test mode? (r/t): ')
-        if cmd == 'r':
-            cmd = input('Enable remote control? (y/n): ')
-            rc = False if cmd == 'n' else True
-            cmd = input('Enable local video? (y/n): ')
-            lv = False if cmd == 'n' else True
-            cmd = input('Enable remote video? (y/n): ')
-            rv = False if cmd == 'n' else True
-            cmd = input('Enable motors? (y/n): ')
-            mtr = False if cmd == 'n' else True
-            asyncio.run(self.main(rmtCtrl=rc, lclVid=lv, rmtVid=rv, mtrs=mtr))
-        elif cmd == 't':
-            print('Test mode not yet funcitonal')
-            self.start()
+            if not data or message == 'e':
+                break
+
+        writer.close()
+        print('Command socket closed')
+
+    async def cmdServer(self):
+        server = await asyncio.start_server(
+            self.cmdRoutine, '0.0.0.0', 8888)
+
+        addr = server.sockets[0].getsockname()
+        print(f'Serving on {addr}')
+
+        async with server:
+            await server.serve_forever()
+
+    async def vidRoutine(self, reader, writer):
+        print('Video socket opened')
+
+        camera = picamera.PiCamera()
+        camera.resolution = (640, 480)
+        camera.framerate = 24
+        camera.vflip = True
+        camera.hflip = True
+
+        try:
+            camera.start_recording(writer, format='h264')
+            while True:
+                data = await reader.read(100)
+                if not data:
+                    break
+        finally:
+            camera.stop_recording()
+            writer.close()
+            print('Video socket closed')
+
+    async def vidServer(self):
+        server = await asyncio.start_server(
+            self.vidRoutine, '0.0.0.0', 7777)
+
+        addr = server.sockets[0].getsockname()
+        print(f'Serving on {addr}')
+
+        async with server:
+            await server.serve_forever()
 
 
-    async def main(self, rmtCtrl=True, lclVid=True, rmtVid=True, mtrs=True):
 
-        # network setup
-        if rmtCtrl or rmtVid:
-            self.server = server()
-            print('Server established')
-        if rmtCtrl:
-            print('Waiting for control client...')
-            # server.connect???
-            print('Connected to control client')
-        if rmtVid:
-            print('Waiting for video client...')
-            # server.connect???
-            print('Connected to video client')
+async def motorLoop():
+    serverCmd = server()
+    serverCmd.cmdServer()
+    motor = robotMotor()
 
-        # peripherals setup
-        if mtrs:
-            self.motor = robotMotor()
-            print('Motors ready')
-        if lclVid or rmtVid:
-            self.camera = camera(lclVid)
-            print('Video ready')
+async def main():
+    serverVid = server()
+    await asyncio.gather(motorLoop(),serverVid.vidServer())
 
-        # event loop
+asyncio.run(main())
+
+
+
+
+# class robot:
+
+#     def start(self):
+#         cmd = input('Run mode or test mode? (r/t): ')
+#         if cmd == 'r':
+#             cmd = input('Enable remote control? (y/n): ')
+#             rc = False if cmd == 'n' else True
+#             cmd = input('Enable local video? (y/n): ')
+#             lv = False if cmd == 'n' else True
+#             cmd = input('Enable remote video? (y/n): ')
+#             rv = False if cmd == 'n' else True
+#             cmd = input('Enable motors? (y/n): ')
+#             mtr = False if cmd == 'n' else True
+#             asyncio.run(self.main(rmtCtrl=rc, lclVid=lv, rmtVid=rv, mtrs=mtr))
+#         elif cmd == 't':
+#             print('Test mode not yet funcitonal')
+#             self.start()
+
+
+#     async def main(self, rmtCtrl=True, lclVid=True, rmtVid=True, mtrs=True):
+
+#         # network setup
+#         if rmtCtrl or rmtVid:
+#             self.server = server()
+#             print('Server established')
+#         if rmtCtrl:
+#             print('Waiting for control client...')
+#             # server.connect???
+#             print('Connected to control client')
+#         if rmtVid:
+#             print('Waiting for video client...')
+#             # server.connect???
+#             print('Connected to video client')
+
+#         # peripherals setup
+#         if mtrs:
+#             self.motor = robotMotor()
+#             print('Motors ready')
+#         if lclVid or rmtVid:
+#             self.camera = camera(lclVid)
+#             print('Video ready')
+
+#         # event loop
         
 
 
@@ -221,48 +290,48 @@ class robot:
 
 
 
-camera = picamera.PiCamera()
-camera.resolution = (1296,972)
-camera.vflip = True
-camera.hflip = True
-camera.start_preview(fullscreen=False, window=(100,200,400,600))
+# camera = picamera.PiCamera()
+# camera.resolution = (1296,972)
+# camera.vflip = True
+# camera.hflip = True
+# camera.start_preview(fullscreen=False, window=(100,200,400,600))
 
-server_socket = socket.socket()
-server_socket.bind(('0.0.0.0', 9964))
-server_socket.listen(0)
-print('waiting for connection')
-connection, addr = server_socket.accept()
-print('connected to {}',addr)
+# server_socket = socket.socket()
+# server_socket.bind(('0.0.0.0', 9964))
+# server_socket.listen(0)
+# print('waiting for connection')
+# connection, addr = server_socket.accept()
+# print('connected to {}',addr)
 
-motorControl = robotMotor()
-exitKey = False
-while exitKey is False:
+# motorControl = robotMotor()
+# exitKey = False
+# while exitKey is False:
 
-    data = connection.recv(1024)
-    keyCmd = data.decode('utf-8')
-    if not data:
-        break
-    # keyCmd = input()
-    if keyCmd is 'e':
-        exitKey = True
-    elif keyCmd is '5':
-        motorControl.fwd()
-    elif keyCmd is '2':
-        motorControl.rev()
-    elif keyCmd is '1':
-        motorControl.softLeft()
-    elif keyCmd is '4':
-        motorControl.hardLeft()
-    elif keyCmd is '3':
-        motorControl.softRight()
-    elif keyCmd is '6':
-        motorControl.hardRight()
-    elif keyCmd is '+':
-        motorControl.servoDown()
-    elif keyCmd is '-':
-        motorControl.servoUp()
+#     data = connection.recv(1024)
+#     keyCmd = data.decode('utf-8')
+#     if not data:
+#         break
+#     # keyCmd = input()
+#     if keyCmd is 'e':
+#         exitKey = True
+#     elif keyCmd is '5':
+#         motorControl.fwd()
+#     elif keyCmd is '2':
+#         motorControl.rev()
+#     elif keyCmd is '1':
+#         motorControl.softLeft()
+#     elif keyCmd is '4':
+#         motorControl.hardLeft()
+#     elif keyCmd is '3':
+#         motorControl.softRight()
+#     elif keyCmd is '6':
+#         motorControl.hardRight()
+#     elif keyCmd is '+':
+#         motorControl.servoDown()
+#     elif keyCmd is '-':
+#         motorControl.servoUp()
 
-connection.close()
-server_socket.close()
-camera.stop_preview()
-GPIO.cleanup()
+# connection.close()
+# server_socket.close()
+# camera.stop_preview()
+# GPIO.cleanup()

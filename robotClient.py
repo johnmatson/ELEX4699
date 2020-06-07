@@ -31,8 +31,8 @@ from KBHit import KBHit
 
 async def cmdClient():
     reader, writer = await asyncio.open_connection(
-        '127.0.0.1', 8888)
-        # '192.168.0.27', 8888)
+        # '127.0.0.1', 8888)
+        '192.168.0.27', 8888)
 
     kb = KBHit()
     while True:
@@ -50,8 +50,8 @@ async def cmdClient():
 
 async def vidClient():
     reader, writer = await asyncio.open_connection(
-        '127.0.0.1', 7777)
-        # '192.168.0.27', 8888)
+        # '127.0.0.1', 7777)
+        '192.168.0.27', 7777)
 
     try:
         # Run a viewer with an appropriate command line
