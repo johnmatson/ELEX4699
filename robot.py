@@ -170,23 +170,21 @@ class server:
     def __init__(self):
         pass
 
-    async def cmdRoutine(self, reader, writer):
+    async def cmdRoutine(self, reader, writer, commands):
         print('Command socket opened')
         while True:
             data = await reader.read(100)
-            message = data.decode()
-
-            print(f"Received {message!r}")
-
-            if not data or message == 'e':
+            command = data.decode()
+            if command:
+                commands.append(command)
+            if not data:
                 break
-
         writer.close()
         print('Command socket closed')
 
-    async def cmdServer(self):
+    async def cmdServer(self, commands):
         server = await asyncio.start_server(
-            self.cmdRoutine, '0.0.0.0', 8888)
+            lambda reader, writer: self.cmdRoutine(reader, writer, commands), '0.0.0.0', 8888)
 
         addr = server.sockets[0].getsockname()
         print(f'Serving on {addr}')
@@ -226,14 +224,43 @@ class server:
 
 
 
-async def motorLoop():
-    serverCmd = server()
-    serverCmd.cmdServer()
+async def control():
+    cmd = ''
+    cmds = []
+    cmdsvr = server()
+    await cmdsvr.cmdServer(cmds)
     motor = robotMotor()
+    kb = KBHit()
+
+    while True:
+        if kb.kbhit():
+            cmd  = kb.getch()
+        elif cmds:
+            cmd = cmds[-1]
+
+        if cmd == 'e':
+            break
+        elif cmd is '5':
+            await motor.fwd()
+        elif cmd is '2':
+            await motor.rev()
+        elif cmd is '1':
+            await motor.softLeft()
+        elif cmd is '4':
+            await motor.hardLeft()
+        elif cmd is '3':
+            await motor.softRight()
+        elif cmd is '6':
+            await motor.hardRight()
+        elif cmd is '+':
+            motor.servoDown()
+        elif cmd is '-':
+            motor.servoUp()
+
 
 async def main():
-    serverVid = server()
-    await asyncio.gather(motorLoop(),serverVid.vidServer())
+    vidsvr = server()
+    await asyncio.gather(control(),vidsvr.vidServer())
 
 asyncio.run(main())
 
