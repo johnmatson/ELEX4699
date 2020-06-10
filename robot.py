@@ -44,7 +44,7 @@ class dcMotor:
         if init > final:
             for DC in range(init-final):
                 self.motor[2].ChangeDutyCycle(init - DC)
-                await asyncio.time.sleep(self.PWMSLEEP)
+                await asyncio.sleep(self.PWMSLEEP)
 
 
 class servoMotor:
@@ -88,62 +88,62 @@ class robotMotor:
     async def fwd(self, driveTime=0.5, speed=100):
         self.left.fwd()
         self.right.fwd()
-        self.left.inc(final=speed)
-        self.right.inc(final=speed)
+        await self.left.inc(final=speed)
+        await self.right.inc(final=speed)
         await asyncio.sleep(driveTime)
-        self.left.dec(init=speed)
-        self.right.dec(init=speed)
+        await self.left.dec(init=speed)
+        await self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
     async def rev(self, driveTime=0.5, speed=100):
         self.left.rev()
         self.right.rev()
-        self.left.inc(final=speed)
-        self.right.inc(final=speed)
+        await self.left.inc(final=speed)
+        await self.right.inc(final=speed)
         await asyncio.sleep(driveTime)
-        self.left.dec(init=speed)
-        self.right.dec(init=speed)
+        await self.left.dec(init=speed)
+        await self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
     async def softLeft(self, driveTime=0.5, speed=100):
         self.left.fwd()
         self.right.fwd()
-        self.right.inc(final=speed)
-        time.sleep(driveTime)
-        self.right.dec(init=speed)
+        await self.right.inc(final=speed)
+        await asyncio.sleep(driveTime)
+        await self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
-    def softRight(self, driveTime=0.5, speed=100):
+    async def softRight(self, driveTime=0.5, speed=100):
         self.left.fwd()
         self.right.fwd()
-        self.left.inc(final=speed)
+        await self.left.inc(final=speed)
         await asyncio.sleep(driveTime)
-        self.left.dec(init=speed)
+        await self.left.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
     async def hardLeft(self, driveTime=0.5, speed=100):
         self.left.rev()
         self.right.fwd()
-        self.left.inc(final=speed//2)
-        self.right.inc(final=speed)
+        await self.left.inc(final=speed//2)
+        await self.right.inc(final=speed)
         await asyncio.sleep(driveTime)
-        self.left.dec(init=speed//2)
-        self.right.dec(init=speed)
+        await self.left.dec(init=speed//2)
+        await self.right.dec(init=speed)
         self.left.stop()
         self.right.stop()
 
     async def hardRight(self, driveTime=0.5, speed=100):
         self.left.fwd()
         self.right.rev()
-        self.left.inc(final=speed)
-        self.right.inc(final=speed//2)
+        await self.left.inc(final=speed)
+        await self.right.inc(final=speed//2)
         await asyncio.sleep(driveTime)
-        self.left.dec(init=speed)
-        self.right.dec(init=speed//2)
+        await self.left.dec(init=speed)
+        await self.right.dec(init=speed//2)
         self.left.stop()
         self.right.stop()
 
@@ -224,34 +224,43 @@ class server:
 
 
 
-async def control():
-    cmd = ''
-    cmds = []
-    cmdsvr = server()
-    await cmdsvr.cmdServer(cmds)
+async def control(cmds):
     motor = robotMotor()
     kb = KBHit()
+    local = True
+    localDict = {True:'local', False:'remote'}
 
     while True:
+        await asyncio.sleep(0)
+        cmd = ''
         if kb.kbhit():
-            cmd  = kb.getch()
+            cmd = kb.getch()
+            local = True
         elif cmds:
             cmd = cmds[-1]
+            cmds.clear()
+            local = False
 
         if cmd == 'e':
             break
         elif cmd is '5':
             await motor.fwd()
+            print(localDict[local],'- foward')
         elif cmd is '2':
             await motor.rev()
+            print(localDict[local],'- reverse')
         elif cmd is '1':
             await motor.softLeft()
+            print(localDict[local],'- soft left')
         elif cmd is '4':
             await motor.hardLeft()
+            print(localDict[local],'- hard left')
         elif cmd is '3':
             await motor.softRight()
+            print(localDict[local],'- soft right')
         elif cmd is '6':
             await motor.hardRight()
+            print(localDict[local],'- hard right')
         elif cmd is '+':
             motor.servoDown()
         elif cmd is '-':
@@ -259,106 +268,12 @@ async def control():
 
 
 async def main():
+    cmds = []
+    cmdsvr = server()
     vidsvr = server()
-    await asyncio.gather(control(),vidsvr.vidServer())
+    await asyncio.gather(control(cmds),cmdsvr.cmdServer(cmds),vidsvr.vidServer())
 
-asyncio.run(main())
-
-
-
-
-# class robot:
-
-#     def start(self):
-#         cmd = input('Run mode or test mode? (r/t): ')
-#         if cmd == 'r':
-#             cmd = input('Enable remote control? (y/n): ')
-#             rc = False if cmd == 'n' else True
-#             cmd = input('Enable local video? (y/n): ')
-#             lv = False if cmd == 'n' else True
-#             cmd = input('Enable remote video? (y/n): ')
-#             rv = False if cmd == 'n' else True
-#             cmd = input('Enable motors? (y/n): ')
-#             mtr = False if cmd == 'n' else True
-#             asyncio.run(self.main(rmtCtrl=rc, lclVid=lv, rmtVid=rv, mtrs=mtr))
-#         elif cmd == 't':
-#             print('Test mode not yet funcitonal')
-#             self.start()
-
-
-#     async def main(self, rmtCtrl=True, lclVid=True, rmtVid=True, mtrs=True):
-
-#         # network setup
-#         if rmtCtrl or rmtVid:
-#             self.server = server()
-#             print('Server established')
-#         if rmtCtrl:
-#             print('Waiting for control client...')
-#             # server.connect???
-#             print('Connected to control client')
-#         if rmtVid:
-#             print('Waiting for video client...')
-#             # server.connect???
-#             print('Connected to video client')
-
-#         # peripherals setup
-#         if mtrs:
-#             self.motor = robotMotor()
-#             print('Motors ready')
-#         if lclVid or rmtVid:
-#             self.camera = camera(lclVid)
-#             print('Video ready')
-
-#         # event loop
-        
-
-
-
-
-
-
-# camera = picamera.PiCamera()
-# camera.resolution = (1296,972)
-# camera.vflip = True
-# camera.hflip = True
-# camera.start_preview(fullscreen=False, window=(100,200,400,600))
-
-# server_socket = socket.socket()
-# server_socket.bind(('0.0.0.0', 9964))
-# server_socket.listen(0)
-# print('waiting for connection')
-# connection, addr = server_socket.accept()
-# print('connected to {}',addr)
-
-# motorControl = robotMotor()
-# exitKey = False
-# while exitKey is False:
-
-#     data = connection.recv(1024)
-#     keyCmd = data.decode('utf-8')
-#     if not data:
-#         break
-#     # keyCmd = input()
-#     if keyCmd is 'e':
-#         exitKey = True
-#     elif keyCmd is '5':
-#         motorControl.fwd()
-#     elif keyCmd is '2':
-#         motorControl.rev()
-#     elif keyCmd is '1':
-#         motorControl.softLeft()
-#     elif keyCmd is '4':
-#         motorControl.hardLeft()
-#     elif keyCmd is '3':
-#         motorControl.softRight()
-#     elif keyCmd is '6':
-#         motorControl.hardRight()
-#     elif keyCmd is '+':
-#         motorControl.servoDown()
-#     elif keyCmd is '-':
-#         motorControl.servoUp()
-
-# connection.close()
-# server_socket.close()
-# camera.stop_preview()
-# GPIO.cleanup()
+try:
+    asyncio.run(main())
+finally:
+    GPIO.cleanup()
