@@ -1,5 +1,5 @@
-An autonomous, garbage collecting robot, developed for the
-Raspberry Pi.
+A network-controlled, garbage collecting robot, developed for
+the Raspberry Pi.
 
 Current functionality includes local and remote motor control
 using a num-pad. Program also streams video over the network
