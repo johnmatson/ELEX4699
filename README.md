@@ -19,4 +19,4 @@ Be aware that currently servo controls are not functioning properly. Also, as of
 ## Implementation
 KBHit.py is included to capture keyboard input without hitting return.
 
-Code is implemented using the asyncio library to allow for simultaneous mutiple socket connections and motor control. All blocking functions should be called using await. 
+Code is implemented using the asyncio library to allow for mutiple simultaneous socket connections and motor control. All blocking functions should be called using await.
