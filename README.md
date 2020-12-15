@@ -28,5 +28,5 @@ Code is implemented using the asyncio library to allow for
 simultaneous mutiple socket connections and motor control.
 All blocking functions should be called using await.
 
-Written by John Matson in spring 2020 for BCIT's ELEX 4699,
+Developed by John Matson in spring 2020 for BCIT's ELEX 4699,
 taught by Craig Hennesey.
